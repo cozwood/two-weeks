@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Two Weeks — Prototype</title>
+<style>
+  :root {
+    --ink: #1A1A2E;
+    --ink-light: #2D2D45;
+    --olive: #7C8C5E;
+    --olive-dark: #697A4E;
+    --olive-soft: #F0F2EB;
+    --olive-glow: rgba(124,140,94,0.12);
+    --cream: #F6F4EF;
+    --warm-white: #FAFAF7;
+    --parchment: #EDEADE;
+    --stone: #9B9790;
+    --text: #2D2D3A;
+    --text-soft: #6B6B78;
+    --white: #FFFFFF;
+    --green: #5E9E6F;
+    --green-bg: #EEF6F0;
+    --border: #E2DFD8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--cream); color: var(--text);
+  }
+
+  .phone-frame {
+    width: 390px; height: 844px; margin: 30px auto;
+    background: var(--warm-white); border-radius: 40px;
+    box-shadow: 0 20px 60px rgba(26,26,46,0.1), 0 0 0 1px var(--border);
+    overflow: hidden; position: relative;
+  }
+  .phone-notch {
+    width: 150px; height: 30px; background: var(--ink);
+    border-radius: 0 0 18px 18px; margin: 0 auto; position: relative; z-index: 10;
+  }
+
+  .screen { display: none; height: calc(844px - 30px); overflow-y: auto; position: relative; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  .bottom-nav {
+    display: flex; justify-content: space-around; align-items: center;
+    height: 65px; background: var(--white); border-top: 1px solid var(--border);
+    flex-shrink: 0; padding-bottom: 10px;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-size: 10px; color: var(--stone); cursor: pointer; padding: 5px 15px;
+    transition: color 0.2s;
+  }
+  .nav-item.active { color: var(--olive); }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  .screen-header {
+    padding: 16px 20px 13px; background: var(--white);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .screen-header h1 { font-size: 22px; font-weight: 700; color: var(--ink); }
+  .screen-header p { font-size: 13px; color: var(--stone); margin-top: 3px; }
+
+  .screen-content { flex: 1; overflow-y: auto; padding: 16px; }
+
+  /* Landing */
+  .landing {
+    background: linear-gradient(170deg, var(--ink) 0%, #252540 100%);
+    justify-content: center; align-items: center; padding: 40px 30px; text-align: center;
+  }
+  .landing-logo { font-size: 44px; font-weight: 800; color: var(--white); letter-spacing: -1px; }
+  .landing-logo span { color: var(--olive); }
+  .landing-tagline { font-size: 15px; color: rgba(255,255,255,0.5); margin: 14px 0 32px; line-height: 1.7; }
+  .landing-btn {
+    display: block; width: 100%; padding: 16px; border-radius: 14px; border: none;
+    font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 12px; transition: transform 0.15s;
+  }
+  .landing-btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--olive); color: var(--white); }
+  .btn-secondary { background: transparent; color: var(--olive); border: 1.5px solid rgba(124,140,94,0.5); }
+  .landing-badge {
+    display: inline-block; padding: 7px 16px;
+    background: rgba(124,140,94,0.15); border-radius: 20px;
+    font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 500;
+    font-style: italic;
+  }
+
+  /* Progress */
+  .progress-bar { height: 4px; background: var(--parchment); border-radius: 4px; margin: 0 20px; flex-shrink: 0; }
+  .progress-fill { height: 100%; background: var(--olive); border-radius: 4px; transition: width 0.4s ease; }
+  .step-label { font-size: 12px; color: var(--stone); text-align: center; padding: 8px 0; flex-shrink: 0; }
+
+  /* Forms */
+  .form-group { margin-bottom: 18px; }
+  .form-label { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 5px; display: block; }
+  .form-hint { font-size: 12px; color: var(--stone); margin-bottom: 6px; font-style: italic; }
+  .form-input, .form-select {
+    width: 100%; padding: 13px 14px; border: 1.5px solid var(--border);
+    border-radius: 12px; font-size: 14px; color: var(--text);
+    background: var(--white); outline: none; transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--olive); box-shadow: 0 0 0 3px var(--olive-glow); }
+  .form-input::placeholder { color: var(--stone); }
+  .form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239B9790' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+
+  .chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 9px 15px; border-radius: 20px; border: 1.5px solid var(--border);
+    font-size: 13px; cursor: pointer; transition: all 0.15s; background: var(--white); color: var(--text-soft);
+  }
+  .chip.selected { background: var(--ink); color: var(--white); border-color: var(--ink); }
+
+  .next-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none;
+    background: var(--olive); color: var(--white); font-size: 16px;
+    font-weight: 600; cursor: pointer; margin-top: 10px; transition: opacity 0.2s;
+  }
+  .next-btn:active { opacity: 0.85; }
+  .back-link { display: block; text-align: center; margin-top: 12px; font-size: 13px; color: var(--stone); cursor: pointer; }
+
+  /* Cards */
+  .match-card {
+    background: var(--white); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 2px 16px rgba(26,26,46,0.05); margin-bottom: 16px;
+    border: 1px solid var(--border);
+  }
+  .match-header {
+    background: var(--ink); padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .match-avatar {
+    width: 46px; height: 46px; border-radius: 23px;
+    background: rgba(124,140,94,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; color: var(--olive); font-weight: 700;
+  }
+  .match-header-text h3 { font-size: 15px; color: var(--white); font-weight: 600; }
+  .match-header-text p { font-size: 11px; color: rgba(255,255,255,0.45); }
+
+  .match-body { padding: 14px 18px; }
+  .match-detail { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--cream); font-size: 13px; }
+  .match-detail:last-child { border-bottom: none; }
+  .match-detail .label { color: var(--stone); }
+  .match-detail .value { color: var(--text); font-weight: 600; }
+
+  .match-tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 18px 14px; }
+  .match-tag { padding: 5px 12px; background: var(--olive-soft); color: var(--olive-dark); border-radius: 8px; font-size: 11px; font-weight: 600; }
+  .verified-tag { padding: 5px 12px; background: var(--green-bg); color: var(--green); border-radius: 8px; font-size: 11px; font-weight: 700; }
+  .self-tag { padding: 5px 12px; background: var(--cream); color: var(--stone); border-radius: 8px; font-size: 11px; font-weight: 600; }
+
+  .match-actions { display: flex; gap: 10px; padding: 0 18px 16px; }
+  .match-btn {
+    flex: 1; padding: 13px; border-radius: 12px; border: none;
+    font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.15s;
+  }
+  .match-btn:active { transform: scale(0.96); }
+  .btn-pass { background: var(--cream); color: var(--stone); }
+  .btn-interest { background: var(--olive); color: var(--white); }
+
+  /* Interest items */
+  .interest-item {
+    background: var(--white); border-radius: 16px; padding: 16px;
+    box-shadow: 0 2px 12px rgba(26,26,46,0.04); margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+  .interest-item h4 { font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+  .interest-item .meta { font-size: 12px; color: var(--stone); }
+  .interest-item .salary { font-size: 15px; font-weight: 700; color: var(--olive-dark); margin-top: 6px; }
+  .interest-item .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .interest-item .tag { padding: 3px 10px; background: var(--parchment); border-radius: 6px; font-size: 11px; color: var(--text-soft); }
+  .interest-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .interest-actions button {
+    flex: 1; padding: 11px; border-radius: 12px; border: none;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+
+  /* Employer browse */
+  .emp-stat-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .emp-stat {
+    flex: 1; background: var(--white); border-radius: 14px; padding: 14px;
+    text-align: center; box-shadow: 0 2px 8px rgba(26,26,46,0.04);
+    border: 1px solid var(--border);
+  }
+  .emp-stat .num { font-size: 28px; font-weight: 700; color: var(--olive-dark); }
+  .emp-stat .lbl { font-size: 10px; color: var(--stone); margin-top: 2px; }
+
+  .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filter-pill {
+    padding: 7px 13px; border-radius: 20px; border: 1.5px solid var(--border);
+    font-size: 12px; color: var(--text-soft); cursor: pointer; background: var(--white);
+  }
+  .filter-pill.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
+
+  .browse-card {
+    background: var(--white); border-radius: 14px; padding: 16px;
+    box-shadow: 0 2px 10px rgba(26,26,46,0.04); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 14px; cursor: pointer; transition: all 0.15s;
+    border: 1px solid var(--border);
+  }
+  .browse-card:hover { border-color: var(--olive); box-shadow: 0 4px 16px rgba(26,26,46,0.08); }
+  .browse-avatar {
+    width: 44px; height: 44px; border-radius: 22px; background: var(--ink);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--olive); flex-shrink: 0;
+  }
+  .browse-info { flex: 1; }
+  .browse-info h4 { font-size: 13px; color: var(--ink); margin-bottom: 2px; }
+  .browse-info p { font-size: 11px; color: var(--stone); }
+  .browse-action {
+    padding: 7px 14px; border-radius: 10px; background: var(--olive-soft);
+    color: var(--olive-dark); font-size: 12px; font-weight: 600; cursor: pointer;
+    border: none; flex-shrink: 0;
+  }
+
+  /* Reveal overlay */
+  .reveal-overlay {
+    display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(26,26,46,0.95); z-index: 20; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 40px;
+  }
+  .reveal-overlay.show { display: flex; }
+  .reveal-overlay h2 { font-size: 24px; color: var(--white); font-weight: 700; margin-bottom: 6px; }
+  .reveal-overlay p { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 24px; line-height: 1.6; }
+  .reveal-option {
+    width: 100%; padding: 14px; background: rgba(124,140,94,0.1); border: 1.5px solid rgba(124,140,94,0.2);
+    border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: background 0.2s;
+    display: flex; align-items: center; gap: 10px; text-align: left;
+  }
+  .reveal-option:hover { background: rgba(124,140,94,0.18); }
+  .reveal-check {
+    width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--olive);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    color: transparent; font-size: 12px;
+  }
+  .reveal-option.checked .reveal-check { background: var(--olive); color: var(--white); }
+  .reveal-option span { font-size: 13px; color: var(--white); }
+  .reveal-option small { font-size: 11px; color: rgba(255,255,255,0.45); display: block; margin-top: 1px; }
+  .reveal-btn {
+    width: 100%; padding: 15px; border-radius: 14px; border: none;
+    background: var(--olive); color: var(--white); font-size: 16px;
+    font-weight: 600; cursor: pointer; margin-top: 16px;
+  }
+
+  /* Mode toggle */
+  .view-toggle {
+    position: fixed; top: 10px; right: 10px; z-index: 100;
+    background: var(--ink); color: var(--white); padding: 9px 16px;
+    border-radius: 20px; font-size: 12px; cursor: pointer;
+    box-shadow: 0 4px 15px rgba(26,26,46,0.2); border: none; font-weight: 600;
+  }
+  .view-toggle:hover { background: var(--olive-dark); }
+  .mode-badge {
+    position: absolute; top: 38px; left: 50%; transform: translateX(-50%);
+    background: var(--olive); color: var(--white); padding: 3px 14px;
+    border-radius: 0 0 8px 8px; font-size: 10px; font-weight: 600; z-index: 11;
+    letter-spacing: 0.5px;
+  }
+
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .animate-in { animation: slideUp 0.3s ease-out; }
+</style>
+</head>
+<body>
+
+<button class="view-toggle" onclick="toggleView()">Switch to Employer View</button>
+
+<!-- ==================== SEEKER VIEW ==================== -->
+<div id="seeker-view">
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="mode-badge">SEEKER</div>
+
+  <!-- Landing -->
+  <div class="screen active" id="screen-landing">
+    <div class="landing">
+      <div class="landing-badge">your boss has no idea you're here</div>
+      <div style="height:30px"></div>
+      <div class="landing-logo">two <span>weeks</span></div>
+      <div class="landing-tagline">Post your skills. Stay anonymous.<br>Let employers come to you.<br>Show your face when you're ready.</div>
+      <button class="landing-btn btn-primary" onclick="goTo('screen-step1')">I deserve better</button>
+      <button class="landing-btn btn-secondary" onclick="toggleView()">I need to hire someone</button>
+      <div style="height: 20px"></div>
+      <div style="font-size:12px; color: rgba(255,255,255,0.35);">Free for seekers. Always. Employers pay 4–8% when they hire. No subscriptions. No nonsense.</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Experience -->
+  <div class="screen" id="screen-step1">
+    <div class="screen-header">
+      <h1>Post Your Card</h1>
+      <p>No name. No resume. No awkward headshot. Just what you bring to the table.</p>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div>
+    <div class="step-label">Step 1 of 3</div>
+    <div class="screen-content animate-in">
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <div class="form-hint">For logging in. Employers never see this.</div>
+        <input class="form-input" type="email" placeholder="definitely-not-your-work-email@gmail.com" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">How long you've been doing this</label>
+        <select class="form-select">
+          <option disabled>Pick a range</option>
+          <option>0–2 years</option><option>3–5 years</option><option>5–8 years</option>
+          <option selected>8–12 years</option><option>12–15 years</option><option>15+ years</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">What you actually do</label>
+        <select class="form-select">
+          <option selected>Accounting & Finance</option><option>HR & People Ops</option>
+          <option>Office & Admin</option><option>IT Support</option><option>Operations</option>
+          <option>Customer Service</option><option>Property Management</option><option>Healthcare Admin</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Industry</label>
+        <select class="form-select">
+          <option selected>Manufacturing</option><option>Healthcare</option><option>Technology</option>
+          <option>Financial Services</option><option>Real Estate</option><option>Retail</option>
+          <option>Education</option><option>Government</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Certifications</label>
+        <div class="form-hint">We check these with licensing boards. They show up verified on your card.</div>
+        <div class="chip-group">
+          <div class="chip selected" onclick="this.classList.toggle('selected')">CPA</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">CMA</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">PMP</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">SHRM-CP</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">PHR</div>
+          <div class="chip selected" onclick="this.classList.toggle('selected')">QuickBooks</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">CompTIA A+</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">None yet</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your best skills (pick up to 6)</label>
+        <div class="chip-group">
+          <div class="chip selected" onclick="this.classList.toggle('selected')">Financial Reporting</div>
+          <div class="chip selected" onclick="this.classList.toggle('selected')">Budgeting</div>
+          <div class="chip selected" onclick="this.classList.toggle('selected')">AP/AR</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Payroll</div>
+          <div class="chip selected" onclick="this.classList.toggle('selected')">Excel (the real kind)</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">ERP Systems</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Team Management</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Tax Prep</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Audit</div>
+          <div class="chip" onclick="this.classList.toggle('selected')">Data Analysis</div>
+        </div>
+      </div>
+      <button class="next-btn" onclick="goTo('screen-step2')">Keep going</button>
+      <div class="back-link" onclick="goTo('screen-landing')">Nevermind</div>
+    </div>
+  </div>
+
+  <!-- Step 2: Preferences -->
+  <div class="screen" id="screen-step2">
+    <div class="screen-header">
+      <h1>Almost Done</h1>
+      <p>What are you looking for? Be honest — nobody knows it's you.</p>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:66%"></div></div>
+    <div class="step-label">Step 2 of 3</div>
+    <div class="screen-content animate-in">
+      <div class="form-group">
+        <label class="form-label">What should they pay you</label>
+        <select class="form-select">
+          <option>$20K–$30K</option><option>$30K–$40K</option><option>$40K–$50K</option>
+          <option selected>$55K–$65K</option><option>$60K–$70K</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Where</label>
+        <input class="form-input" type="text" value="Des Moines, IA" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">How often you want to show up</label>
+        <div class="chip-group">
+          <div class="chip" onclick="selectOne(this)">On-site</div>
+          <div class="chip selected" onclick="selectOne(this)">Hybrid</div>
+          <div class="chip" onclick="selectOne(this)">Remote</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">When could you start</label>
+        <div class="chip-group">
+          <div class="chip" onclick="selectOne(this)">Immediately</div>
+          <div class="chip selected" onclick="selectOne(this)">2 weeks</div>
+          <div class="chip" onclick="selectOne(this)">1 month</div>
+          <div class="chip" onclick="selectOne(this)">Flexible</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Why are you really looking</label>
+        <div class="form-hint">Employers see this. They don't see who said it.</div>
+        <div class="chip-group">
+          <div class="chip selected" onclick="selectOne(this)">Bad culture</div>
+          <div class="chip" onclick="selectOne(this)">Underpaid</div>
+          <div class="chip" onclick="selectOne(this)">No growth</div>
+          <div class="chip" onclick="selectOne(this)">Bad management</div>
+          <div class="chip" onclick="selectOne(this)">Commute</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Block a company</label>
+        <div class="form-hint">They'll never see your card. You know who goes here.</div>
+        <input class="form-input" type="text" placeholder="e.g. your current employer" value="Acme Manufacturing" />
+      </div>
+      <button class="next-btn" onclick="goTo('screen-review')">One more step</button>
+      <div class="back-link" onclick="goTo('screen-step1')">Back</div>
+    </div>
+  </div>
+
+  <!-- Step 3: Review Card -->
+  <div class="screen" id="screen-review">
+    <div class="screen-header">
+      <h1>Your Card</h1>
+      <p>This is what employers see. Your name is nowhere on it.</p>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    <div class="step-label">Step 3 of 3 — Review</div>
+    <div class="screen-content animate-in">
+      <div class="match-card">
+        <div class="match-header">
+          <div class="match-avatar">?</div>
+          <div class="match-header-text">
+            <h3>Anonymous Seeker</h3>
+            <p>Card #TW-4821</p>
+          </div>
+        </div>
+        <div class="match-body">
+          <div class="match-detail"><span class="label">Experience</span><span class="value">8–12 years</span></div>
+          <div class="match-detail"><span class="label">Category</span><span class="value">Accounting & Finance</span></div>
+          <div class="match-detail"><span class="label">Industry</span><span class="value">Manufacturing</span></div>
+          <div class="match-detail"><span class="label">Salary</span><span class="value">$55K–$65K</span></div>
+          <div class="match-detail"><span class="label">Location</span><span class="value">Des Moines, IA (Hybrid)</span></div>
+          <div class="match-detail"><span class="label">Available</span><span class="value">2 weeks</span></div>
+          <div class="match-detail"><span class="label">Looking because</span><span class="value">Bad culture</span></div>
+        </div>
+        <div class="match-tags">
+          <span class="verified-tag">CPA Verified</span>
+          <span class="verified-tag">QB Verified</span>
+          <span class="match-tag">Financial Reporting</span>
+          <span class="match-tag">Budgeting</span>
+          <span class="match-tag">AP/AR</span>
+          <span class="match-tag">Excel (the real kind)</span>
+        </div>
+      </div>
+      <div style="background: var(--olive-soft); border-radius: 12px; padding: 13px 15px; margin-bottom: 16px;">
+        <div style="font-size: 13px; color: var(--olive-dark); font-weight: 600;">What stays hidden</div>
+        <div style="font-size: 12px; color: var(--stone); margin-top: 4px; line-height: 1.5;">Your name, email, phone, current employer, past job titles, and education. None of it shows up until you decide to share it.</div>
+      </div>
+      <button class="next-btn" onclick="goTo('screen-dash')">Post my card</button>
+      <div class="back-link" onclick="goTo('screen-step2')">Edit something</div>
+    </div>
+  </div>
+
+  <!-- Seeker Dashboard -->
+  <div class="screen" id="screen-dash">
+    <div class="screen-header">
+      <h1>Your Dashboard</h1>
+      <p>#TW-4821 is live in Des Moines</p>
+    </div>
+    <div class="screen-content animate-in">
+      <div style="background: var(--olive-soft); border-radius: 12px; padding: 13px 15px; margin-bottom: 16px; font-size: 13px; color: var(--text-soft); line-height: 1.5;">
+        <strong style="color: var(--ink);">You're live.</strong> Employers in your area can see your card. You don't have to do anything — they come to you.
+      </div>
+
+      <div style="font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 10px;">They're interested (3)</div>
+
+      <div class="interest-item">
+        <h4>Senior Accountant</h4>
+        <div class="meta">Distribution company · ~200 employees · Des Moines · Hybrid</div>
+        <div class="salary">$58,000 – $65,000</div>
+        <div class="tags">
+          <span class="tag">CPA Required</span><span class="tag">Financial Reporting</span><span class="tag">Full benefits</span>
+        </div>
+        <div class="interest-actions">
+          <button style="background: var(--cream); color: var(--stone);" onclick="this.closest('.interest-item').style.display='none'">Pass</button>
+          <button style="background: var(--olive); color: var(--white);" onclick="showReveal()">Show them who I am</button>
+        </div>
+      </div>
+
+      <div class="interest-item">
+        <h4>Accounting Manager</h4>
+        <div class="meta">Healthcare group · ~85 employees · Remote OK</div>
+        <div class="salary">$60,000 – $68,000</div>
+        <div class="tags">
+          <span class="tag">CPA Preferred</span><span class="tag">Team of 3</span>
+        </div>
+        <div class="interest-actions">
+          <button style="background: var(--cream); color: var(--stone);" onclick="this.closest('.interest-item').style.display='none'">Pass</button>
+          <button style="background: var(--olive); color: var(--white);" onclick="showReveal()">Show them who I am</button>
+        </div>
+      </div>
+
+      <div class="interest-item">
+        <h4>Staff Accountant <span style="font-size:11px; color:var(--olive); font-weight:400; font-style: italic;">(via recruiter)</span></h4>
+        <div class="meta">Confidential client · Mid-size · West Des Moines · On-site</div>
+        <div class="salary">$55,000 – $62,000</div>
+        <div class="tags">
+          <span class="tag">QuickBooks</span><span class="tag">AP/AR</span>
+        </div>
+        <div class="interest-actions">
+          <button style="background: var(--cream); color: var(--stone);" onclick="this.closest('.interest-item').style.display='none'">Pass</button>
+          <button style="background: var(--olive); color: var(--white);" onclick="showReveal()">Show them who I am</button>
+        </div>
+      </div>
+
+      <div style="font-size: 15px; font-weight: 700; color: var(--green); margin: 20px 0 10px;">Talking (1)</div>
+      <div style="background: var(--white); border-radius: 14px; padding: 14px; box-shadow: 0 2px 8px rgba(26,26,46,0.04); border: 1px solid var(--border); border-left: 3px solid var(--green);">
+        <div style="font-size: 14px; font-weight: 600; color: var(--ink);">Senior Accountant — Distribution co.</div>
+        <div style="font-size: 11px; color: var(--green); margin-top: 2px;">Revealed 2 days ago</div>
+        <div style="font-size: 12px; color: var(--stone); margin-top: 4px; font-style: italic;">"We'd love to set up a call this week. What works for you?"</div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Messages
+      </div>
+      <div class="nav-item" onclick="goTo('screen-review')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        My Card
+      </div>
+    </div>
+
+    <!-- Reveal overlay -->
+    <div class="reveal-overlay" id="revealOverlay">
+      <h2>Your call</h2>
+      <p>Pick what you want to share. You can take it back anytime.</p>
+      <div class="reveal-option checked" onclick="toggleReveal(this)">
+        <div class="reveal-check">&#10003;</div>
+        <div><span>Full name</span></div>
+      </div>
+      <div class="reveal-option checked" onclick="toggleReveal(this)">
+        <div class="reveal-check">&#10003;</div>
+        <div><span>Email address</span></div>
+      </div>
+      <div class="reveal-option" onclick="toggleReveal(this)">
+        <div class="reveal-check">&#10003;</div>
+        <div><span>Phone number</span><small>Speeds things up. Totally optional.</small></div>
+      </div>
+      <div class="reveal-option" onclick="toggleReveal(this)">
+        <div class="reveal-check">&#10003;</div>
+        <div><span>Current employer</span><small>Only if you're comfortable.</small></div>
+      </div>
+      <button class="reveal-btn" onclick="document.getElementById('revealOverlay').classList.remove('show')">Reveal & connect</button>
+      <div class="back-link" style="color: rgba(255,255,255,0.45);" onclick="document.getElementById('revealOverlay').classList.remove('show')">Not yet</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ==================== EMPLOYER VIEW ==================== -->
+<div id="employer-view" style="display:none;">
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="mode-badge" style="background: var(--ink);">EMPLOYER</div>
+
+  <div class="screen active" id="emp-browse">
+    <div class="screen-header">
+      <h1>Browse Seekers</h1>
+      <p>Des Moines · Accounting & Finance · Real people, no resumes</p>
+    </div>
+    <div class="screen-content">
+      <div class="emp-stat-row">
+        <div class="emp-stat"><div class="num">47</div><div class="lbl">Matches</div></div>
+        <div class="emp-stat"><div class="num">5</div><div class="lbl">Intros Sent</div></div>
+        <div class="emp-stat"><div class="num">1</div><div class="lbl">Revealed</div></div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-pill active">All</div>
+        <div class="filter-pill">CPA</div>
+        <div class="filter-pill">5+ yrs</div>
+        <div class="filter-pill">$50-65K</div>
+        <div class="filter-pill">Hybrid</div>
+      </div>
+
+      <div class="browse-card" onclick="goToEmp('emp-detail')">
+        <div class="browse-avatar">?</div>
+        <div class="browse-info">
+          <h4>8–12 yrs · Accounting · Manufacturing</h4>
+          <p>$55-65K · Des Moines · Hybrid · 2 weeks</p>
+          <div style="display:flex; gap:4px; margin-top:4px;">
+            <span class="verified-tag" style="font-size:9px; padding:2px 6px;">CPA</span>
+            <span class="verified-tag" style="font-size:9px; padding:2px 6px;">QB</span>
+          </div>
+        </div>
+        <button class="browse-action">Request Intro</button>
+      </div>
+
+      <div class="browse-card">
+        <div class="browse-avatar">?</div>
+        <div class="browse-info">
+          <h4>5–8 yrs · Accounting · Healthcare</h4>
+          <p>$45-55K · Des Moines · Remote · Ready now</p>
+          <div style="display:flex; gap:4px; margin-top:4px;">
+            <span class="verified-tag" style="font-size:9px; padding:2px 6px;">CMA</span>
+          </div>
+        </div>
+        <button class="browse-action">Request Intro</button>
+      </div>
+
+      <div class="browse-card">
+        <div class="browse-avatar">?</div>
+        <div class="browse-info">
+          <h4>12–15 yrs · Accounting · Tech</h4>
+          <p>$60-70K · Ames · Hybrid · 1 month</p>
+          <div style="display:flex; gap:4px; margin-top:4px;">
+            <span class="verified-tag" style="font-size:9px; padding:2px 6px;">CPA</span>
+            <span class="verified-tag" style="font-size:9px; padding:2px 6px;">PMP</span>
+          </div>
+        </div>
+        <button class="browse-action">Request Intro</button>
+      </div>
+
+      <div class="browse-card">
+        <div class="browse-avatar">?</div>
+        <div class="browse-info">
+          <h4>3–5 yrs · Accounting · Retail</h4>
+          <p>$35-45K · W. Des Moines · On-site · 2 weeks</p>
+          <div style="display:flex; gap:4px; margin-top:4px;">
+            <span class="self-tag" style="font-size:9px; padding:2px 6px;">Self-reported</span>
+          </div>
+        </div>
+        <button class="browse-action">Request Intro</button>
+      </div>
+
+      <div class="browse-card">
+        <div class="browse-avatar">?</div>
+        <div class="browse-info">
+          <h4>5–8 yrs · HR · Healthcare</h4>
+          <p>$48-56K · Des Moines · On-site · 2 weeks</p>
+          <div style="display:flex; gap:4px; margin-top:4px;">
+            <span class="verified-tag" style="font-size:9px; padding:2px 6px;">SHRM-CP</span>
+          </div>
+        </div>
+        <button class="browse-action">Request Intro</button>
+      </div>
+
+      <div class="browse-card" style="border-left: 3px solid var(--green);">
+        <div class="browse-avatar" style="background: var(--olive); color: var(--white); font-size: 13px;">JM</div>
+        <div class="browse-info">
+          <h4>Jane M. — Revealed</h4>
+          <p>$55-65K · Des Moines · Hybrid</p>
+          <div style="font-size:10px; color: var(--green); font-weight:600; margin-top:2px;">CONNECTED</div>
+        </div>
+        <button class="browse-action" style="background: var(--green-bg); color: var(--green);">Message</button>
+      </div>
+
+      <div style="text-align: center; padding: 16px; font-size: 12px; color: var(--stone);">
+        Showing 6 of 47 · Load more
+      </div>
+
+      <div style="background: var(--parchment); border-radius: 12px; padding: 13px; margin-top: 4px; font-size: 12px; color: var(--stone); line-height: 1.5;">
+        Free to browse. Free to request intros. You only pay when you hire — 4–8% of first-year salary. No subscriptions. No catch.
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Browse
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        Interested
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Messages
+      </div>
+    </div>
+  </div>
+
+  <!-- Employer: Card Detail -->
+  <div class="screen" id="screen-emp-detail">
+    <div class="screen-header" style="display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <h1>Seeker Card</h1>
+        <p>Everything they chose to share. Nothing more.</p>
+      </div>
+      <div class="back-link" style="margin:0;" onclick="goToEmp('emp-browse')">Back</div>
+    </div>
+    <div class="screen-content">
+      <div class="match-card">
+        <div class="match-header">
+          <div class="match-avatar">?</div>
+          <div class="match-header-text">
+            <h3>Anonymous Seeker</h3>
+            <p>Card #TW-4821 · Posted 5 days ago</p>
+          </div>
+        </div>
+        <div class="match-body">
+          <div class="match-detail"><span class="label">Experience</span><span class="value">8–12 years</span></div>
+          <div class="match-detail"><span class="label">Category</span><span class="value">Accounting & Finance</span></div>
+          <div class="match-detail"><span class="label">Industry</span><span class="value">Manufacturing</span></div>
+          <div class="match-detail"><span class="label">Salary</span><span class="value">$55K–$65K</span></div>
+          <div class="match-detail"><span class="label">Location</span><span class="value">Des Moines, IA (Hybrid)</span></div>
+          <div class="match-detail"><span class="label">Available</span><span class="value">2 weeks</span></div>
+          <div class="match-detail"><span class="label">Looking because</span><span class="value">Bad culture</span></div>
+        </div>
+        <div class="match-tags">
+          <span class="verified-tag">CPA Verified</span>
+          <span class="verified-tag">QB Verified</span>
+          <span class="match-tag">Financial Reporting</span>
+          <span class="match-tag">Budgeting</span>
+          <span class="match-tag">AP/AR</span>
+          <span class="match-tag">Excel (the real kind)</span>
+        </div>
+        <div class="match-actions">
+          <button class="match-btn btn-pass">Skip</button>
+          <button class="match-btn btn-interest">Request Intro</button>
+        </div>
+      </div>
+
+      <div style="background: var(--parchment); border-radius: 12px; padding: 14px; margin-bottom: 10px;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--ink);">How this works</div>
+        <div style="font-size: 12px; color: var(--stone); margin-top: 6px; line-height: 1.6;">
+          Hit "Request Intro" and your company info goes to this seeker. If they're interested, they reveal their identity to you. The ball's in their court — that's the whole point.
+        </div>
+      </div>
+
+      <div style="background: var(--parchment); border-radius: 12px; padding: 14px;">
+        <div style="font-size: 13px; font-weight: 600; color: var(--ink);">Compliance add-ons</div>
+        <div style="font-size: 12px; color: var(--stone); margin-top: 6px; line-height: 1.6;">
+          Background checks, drug screening, and credential verification available after the seeker reveals. All FCRA-compliant. The boring legal stuff, handled.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function goTo(id) {
+  document.querySelectorAll('#seeker-view .screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function goToEmp(id) {
+  document.querySelectorAll('#employer-view .screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id === 'emp-browse' ? 'emp-browse' : 'screen-emp-detail').classList.add('active');
+}
+function toggleView() {
+  const sv = document.getElementById('seeker-view');
+  const ev = document.getElementById('employer-view');
+  const btn = document.querySelector('.view-toggle');
+  if (sv.style.display === 'none') {
+    sv.style.display = ''; ev.style.display = 'none';
+    btn.textContent = 'Switch to Employer View';
+  } else {
+    sv.style.display = 'none'; ev.style.display = '';
+    btn.textContent = 'Switch to Seeker View';
+  }
+}
+function selectOne(el) {
+  el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function showReveal() { document.getElementById('revealOverlay').classList.add('show'); }
+function toggleReveal(el) { el.classList.toggle('checked'); }
+</script>
+</body>
+</html>
